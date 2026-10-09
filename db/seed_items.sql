@@ -12,6 +12,13 @@ CREATE TABLE IF NOT EXISTS items (
     price       NUMERIC(10,2) NOT NULL CHECK (price >= 0)
 );
 
+-- Upgrade existing tables before seeding, preserving uncategorized rows.
+ALTER TABLE items ADD COLUMN IF NOT EXISTS category TEXT;
+
+UPDATE items SET category = 'Uncategorized' WHERE category IS NULL;
+
+ALTER TABLE items ALTER COLUMN category SET NOT NULL;
+
 INSERT INTO items (name, category, description, price) VALUES
     -- Produce
     ('Bananas', 'Produce', 'Fresh ripe bananas, sold per pound.', 0.59),
