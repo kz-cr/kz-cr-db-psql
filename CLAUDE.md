@@ -17,9 +17,13 @@ Local PostgreSQL 17 (Docker) holding data for an online grocery shopping web app
 - **Credentials apply only on first volume creation.** Changing them in `.env` has no effect on an existing `pgdata` volume; use `docker compose down -v` to reset (this deletes data).
 - **Scripts are bash with `set -euo pipefail`** and `cd "$(dirname "$0")"` so they run from any directory.
 - **SQL must be idempotent.** Use `CREATE TABLE IF NOT EXISTS` and `INSERT ... ON CONFLICT (...) DO UPDATE`, wrapped in a transaction. Seed runs use `psql -v ON_ERROR_STOP=1` so a failure aborts instead of partially applying.
-- **`items` table:** `id` (identity PK), `name` (`TEXT`, unique, the upsert key), `description` (`TEXT`), `price` (`NUMERIC(10,2)`, `CHECK >= 0`). Money is `NUMERIC`, never float.
+- **`items` table:** `id` (identity PK), `name` (`TEXT`, unique, the upsert key), `category` (`TEXT`, e.g. Produce, Dairy and Eggs; indexed), `description` (`TEXT`), `price` (`NUMERIC(10,2)`, `CHECK >= 0`). Money is `NUMERIC`, never float.
 - **Upsert key is `name`.** Renaming an item in the seed file creates a new row and leaves the old one behind; removing an item from the file does not delete it.
 - Seed data is purely sample data; prices and descriptions are invented.
+
+## Bringing up the database
+
+Whenever you bring the database up with `./run.sh`, also run `./seed.sh` right after so the `items` table exists and is populated. Seeding is idempotent, so it is safe to run on every bring-up.
 
 ## Verifying changes
 

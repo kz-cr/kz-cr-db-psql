@@ -28,6 +28,20 @@ Connect with `psql`:
 psql postgresql://app:app_password@127.0.0.1:5432/app
 ```
 
+## Schema
+
+Items are grouped by category (e.g. Produce, Household) using a single `items` table:
+
+- `items` (`id`, `name` unique, `category`, `description`, `price`)
+
+Create the table and load the sample data with `./seed.sh` (idempotent; run it after `./run.sh`).
+
+Example:
+
+```sql
+SELECT category, count(*) FROM items GROUP BY category ORDER BY category;
+```
+
 ## Configuration
 
 Copy `.env.example` to `.env` to change the user, password, database name, or host port. `.env` is git-ignored. Note the credentials are only applied the first time the data volume is created.
