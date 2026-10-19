@@ -6,8 +6,9 @@ Local PostgreSQL 17 (Docker) holding data for an online grocery shopping web app
 
 - `docker-compose.yml`: single `postgres` service, container `kz-cr-db-psql`, data in the `pgdata` named volume.
 - `run.sh`: starts the container with `docker compose up -d --wait` and prints the connection string.
-- `seed.sh`: pipes `db/seed_items.sql` into the running container via `docker compose exec -T postgres psql`.
+- `seed.sh`: pipes `db/seed_items.sql`, then `db/invoices.sql`, into the running container via `docker compose exec -T postgres psql`. Order matters because invoices reference items.
 - `db/seed_items.sql`: creates the `items` table and upserts ~50 sample grocery items.
+- `db/invoices.sql`: creates the `invoices` and `invoice_items` tables (no sample data).
 - `.env.example`: overridable settings (`POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_PORT`). `.env` is git-ignored.
 
 ## Conventions and decisions
@@ -19,6 +20,8 @@ Local PostgreSQL 17 (Docker) holding data for an online grocery shopping web app
 - **SQL must be idempotent.** Use `CREATE TABLE IF NOT EXISTS` and `INSERT ... ON CONFLICT (...) DO UPDATE`, wrapped in a transaction. Seed runs use `psql -v ON_ERROR_STOP=1` so a failure aborts instead of partially applying.
 - **`items` table:** `id` (identity PK), `name` (`TEXT`, unique, the upsert key), `description` (`TEXT`), `price` (`NUMERIC(10,2)`, `CHECK >= 0`). Money is `NUMERIC`, never float.
 - **Upsert key is `name`.** Renaming an item in the seed file creates a new row and leaves the old one behind; removing an item from the file does not delete it.
+- **`invoices` table:** `id` (identity PK), `invoice_date` (`DATE`), `amount` (`NUMERIC(10,2)`, `CHECK >= 0`, stored rather than computed), `delivery_address` (`TEXT`).
+- **`invoice_items` join table:** PK (`invoice_id`, `item_id`), `quantity` (`CHECK > 0`), `unit_price` (`NUMERIC(10,2)`, price at time of sale). `invoice_id` cascades on delete; `item_id` is `ON DELETE RESTRICT`.
 - Seed data is purely sample data; prices and descriptions are invented.
 
 ## Verifying changes

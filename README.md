@@ -38,7 +38,7 @@ Copy `.env.example` to `.env` to change the user, password, database name, or ho
 ./seed.sh
 ```
 
-This creates the `items` table (if missing) and loads about 50 sample grocery items. The database container must already be running (`./run.sh`).
+This creates the `items` table (if missing) and loads about 50 sample grocery items, then creates the invoice tables described below. The database container must already be running (`./run.sh`).
 
 | Column        | Type            | Notes                          |
 |---------------|-----------------|--------------------------------|
@@ -48,6 +48,30 @@ This creates the `items` table (if missing) and loads about 50 sample grocery it
 | `price`       | `NUMERIC(10,2)` | Required, must be `>= 0`       |
 
 The script is idempotent. Rows are matched on `name` and updated in place, so re-running it never creates duplicates. Edit [db/seed_items.sql](db/seed_items.sql) to change the sample data. Items removed from the file are not deleted from the table.
+
+## Invoices
+
+`./seed.sh` also creates two tables from [db/invoices.sql](db/invoices.sql) (no sample data):
+
+`invoices`:
+
+| Column             | Type            | Notes                           |
+|--------------------|-----------------|---------------------------------|
+| `id`               | `BIGINT`        | Generated identity, primary key |
+| `invoice_date`     | `DATE`          | Required                        |
+| `amount`           | `NUMERIC(10,2)` | Required, must be `>= 0`        |
+| `delivery_address` | `TEXT`          | Required                        |
+
+`invoice_items` is a join table linking invoices to items:
+
+| Column       | Type            | Notes                                                   |
+|--------------|-----------------|---------------------------------------------------------|
+| `invoice_id` | `BIGINT`        | References `invoices(id)`; deleting an invoice deletes its lines |
+| `item_id`    | `BIGINT`        | References `items(id)`; an item on an invoice can't be deleted |
+| `quantity`   | `INTEGER`       | Required, must be `> 0`                                 |
+| `unit_price` | `NUMERIC(10,2)` | Price at the time of sale, must be `>= 0`               |
+
+The primary key is (`invoice_id`, `item_id`).
 
 ## Data and teardown
 
